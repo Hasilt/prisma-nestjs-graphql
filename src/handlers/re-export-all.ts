@@ -1,6 +1,5 @@
 import assert from 'assert';
 import AwaitEventEmitter from 'await-event-emitter';
-import { ExportDeclarationStructure, OptionalKind, SourceFile } from 'ts-morph';
 
 import { EventArguments } from '../types';
 
@@ -34,13 +33,16 @@ function beforeGenerateFiles(args: EventArguments) {
     const exportDeclarations = project
         .getRootDirectories()
         .map(directory => directory.getSourceFile('index.ts'))
-        .map(sourcesFile => ({
-            namedExports: sourcesFile!
-                .getExportSymbols()
-                .map(s => ({ name: s.getName() })),
-            moduleSpecifier: rootDirectory.getRelativePathAsModuleSpecifierTo(
-                sourcesFile!,
-            ),
-        }));
+        .map(sourcesFile => {
+            assert(sourcesFile, 'Just created index source file not found');
+            return {
+                namedExports: sourcesFile
+                    .getExportSymbols()
+                    .map(s => ({ name: s.getName() })),
+                moduleSpecifier: rootDirectory.getRelativePathAsModuleSpecifierTo(
+                    sourcesFile,
+                ),
+            };
+        });
     sourceIndexFile.addExportDeclarations(exportDeclarations);
 }

@@ -7,7 +7,6 @@ import { Project, QuoteKind } from 'ts-morph';
 import { argsType } from './handlers/args-type';
 import { combineScalarFilters } from './handlers/combine-scalar-filters';
 import { createAggregateInput } from './handlers/create-aggregate-input';
-import { error } from './handlers/error';
 import { generateFiles } from './handlers/generate-files';
 import { inputType } from './handlers/input-type';
 import { modelData } from './handlers/model-data';
@@ -17,6 +16,7 @@ import { outputType } from './handlers/output-type';
 import { reExportAll } from './handlers/re-export-all';
 import { registerEnum } from './handlers/register-enum';
 import { typeNames } from './handlers/type-names';
+import { warning } from './handlers/warning';
 import { createConfig } from './helpers/create-config';
 import { factoryGetSourceFile } from './helpers/factory-get-souce-file';
 import { DMMF, EventArguments, Field, Model, OutputType } from './types';
@@ -32,7 +32,7 @@ export async function generate(
 ) {
     const { connectCallback, generator, otherGenerators } = args;
     const eventEmitter = new AwaitEventEmitter();
-    eventEmitter.on('Error', error);
+    eventEmitter.on('Warning', warning);
     eventEmitter.on('Model', modelData);
     eventEmitter.on('EnumType', registerEnum);
     eventEmitter.on('OutputType', outputType);
@@ -44,15 +44,15 @@ export async function generate(
     eventEmitter.on('GenerateFiles', generateFiles);
     assert(generator.output, 'generator.output is empty');
     const config = createConfig(generator.config);
-    for (const warning of config.$warnings) {
-        eventEmitter.emitSync('Error', warning, 'WARNING');
+    for (const message of config.$warnings) {
+        eventEmitter.emitSync('Warning', message);
     }
     const prismaClientOutput = otherGenerators.find(
         x => x.provider === 'prisma-client-js',
     )?.output;
-    assert(prismaClientOutput, 'prismaClientOutput');
+    assert(prismaClientOutput, 'Cannot find output of prisma-client-js');
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const prismaClientDmmf = JSON.parse(
+    const prismaClientDmmf: DMMF.Document = JSON.parse(
         JSON.stringify(
             args.prismaClientDmmf ??
                 (require(prismaClientOutput).dmmf as DMMF.Document),
