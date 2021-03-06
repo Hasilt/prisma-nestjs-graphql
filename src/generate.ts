@@ -7,6 +7,7 @@ import { Project, QuoteKind } from 'ts-morph';
 import { argsType } from './handlers/args-type';
 import { combineScalarFilters } from './handlers/combine-scalar-filters';
 import { createAggregateInput } from './handlers/create-aggregate-input';
+import { error } from './handlers/error';
 import { generateFiles } from './handlers/generate-files';
 import { inputType } from './handlers/input-type';
 import { modelData } from './handlers/model-data';
@@ -27,8 +28,22 @@ export async function generate(
     },
 ) {
     const { connectCallback, generator, otherGenerators } = args;
-    const config = createConfig(generator.config);
+    const eventEmitter = new AwaitEventEmitter();
+    eventEmitter.on('Error', error);
+    eventEmitter.on('Model', modelData);
+    eventEmitter.on('EnumType', registerEnum);
+    eventEmitter.on('OutputType', outputType);
+    eventEmitter.on('ModelOutputType', modelOutputType);
+    eventEmitter.on('AggregateOutput', createAggregateInput);
+    eventEmitter.on('InputType', inputType);
+    eventEmitter.on('InputType', typeNames);
+    eventEmitter.on('ArgsType', argsType);
+    eventEmitter.on('GenerateFiles', generateFiles);
     assert(generator.output, 'generator.output is empty');
+    const config = createConfig(generator.config);
+    for (const warning of config.$warnings) {
+        eventEmitter.emitSync('Error', warning, 'WARNING');
+    }
     const prismaClientOutput = otherGenerators.find(
         x => x.provider === 'prisma-client-js',
     )?.output;
@@ -46,18 +61,6 @@ export async function generate(
             quoteKind: QuoteKind.Single,
         },
     });
-
-    const eventEmitter = new AwaitEventEmitter();
-
-    eventEmitter.on('Model', modelData);
-    eventEmitter.on('EnumType', registerEnum);
-    eventEmitter.on('OutputType', outputType);
-    eventEmitter.on('ModelOutputType', modelOutputType);
-    eventEmitter.on('AggregateOutput', createAggregateInput);
-    eventEmitter.on('InputType', inputType);
-    eventEmitter.on('InputType', typeNames);
-    eventEmitter.on('ArgsType', argsType);
-    eventEmitter.on('GenerateFiles', generateFiles);
 
     config.combineScalarFilters && combineScalarFilters(eventEmitter);
     config.noAtomicOperations && noAtomicOperations(eventEmitter);
