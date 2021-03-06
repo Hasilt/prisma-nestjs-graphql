@@ -62,7 +62,6 @@ export async function generate(
     const project = new Project({
         tsConfigFilePath: 'tsconfig.json',
         skipAddingFilesFromTsConfig: true,
-        skipLoadingLibFiles: true,
         manipulationSettings: {
             quoteKind: QuoteKind.Single,
         },
@@ -98,6 +97,7 @@ export async function generate(
         typeNames: new Set<string>(),
         enums: mapKeys(datamodel.enums, x => x.name),
         modelFields,
+        playground: project.createSourceFile('playground.ts', ''),
     };
 
     if (connectCallback) {

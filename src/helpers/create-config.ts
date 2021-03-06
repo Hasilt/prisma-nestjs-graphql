@@ -1,6 +1,6 @@
 import filenamify from 'filenamify';
 import { unflatten } from 'flat';
-import { merge, trim } from 'lodash';
+import { mapKeys, merge, trim } from 'lodash';
 import { Nullable } from 'simplytyped';
 
 import { TypeRecord } from '../types';
@@ -49,6 +49,7 @@ export function createConfig(data: Record<string, string | undefined>) {
         reExportAll: ['true', '1', 'on'].includes(
             (config.reExportAll as Nullable<string>) ?? 'false',
         ),
+        decorators: mapKeys(config.decorators, 'name'),
         $warnings,
     };
 }

@@ -130,6 +130,18 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
             defaultValue: modelField?.default,
             description: modelField?.documentation,
         });
+
+        for (const decorator of fieldMeta?.decorators ?? []) {
+            generateImport({
+                sourceFile,
+                name: decorator.name,
+                moduleSpecifier: decorator.from,
+            });
+            propertyDeclaration.insertDecorator(0, {
+                name: decorator.name,
+                arguments: decorator.arguments,
+            });
+        }
     }
 
     // Check re-export, comment generated class if found
@@ -152,4 +164,12 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
         classDeclaration.remove();
         sourceFile.addStatements(['\n', ...commentedText]);
     }
+
+    const diagnostics = sourceFile.getPreEmitDiagnostics().map(d => ({
+        getMessageText: d.getMessageText(),
+        getLineNumber: d.getLineNumber(),
+        getCategory: d.getCategory(),
+        related: d.compilerObject.relatedInformation?.map(i => i.messageText),
+    }));
+    console.dir(diagnostics, { depth: 4 });
 }
