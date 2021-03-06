@@ -18,13 +18,16 @@ import { reExportAll } from './handlers/re-export-all';
 import { registerEnum } from './handlers/register-enum';
 import { typeNames } from './handlers/type-names';
 import { createConfig } from './helpers/create-config';
-import { generateFileName } from './helpers/generate-file-name';
+import { factoryGetSourceFile } from './helpers/factory-get-souce-file';
 import { DMMF, EventArguments, Field, Model, OutputType } from './types';
 
 export async function generate(
     args: GeneratorOptions & {
         prismaClientDmmf?: DMMF.Document;
-        connectCallback?: (emitter: AwaitEventEmitter) => void | Promise<void>;
+        connectCallback?: (
+            emitter: AwaitEventEmitter,
+            eventArguments: EventArguments,
+        ) => void | Promise<void>;
     },
 ) {
     const { connectCallback, generator, otherGenerators } = args;
@@ -55,8 +58,11 @@ export async function generate(
                 (require(prismaClientOutput).dmmf as DMMF.Document),
         ),
     );
+    // generator.output
     const project = new Project({
-        useInMemoryFileSystem: true,
+        tsConfigFilePath: 'tsconfig.json',
+        skipAddingFilesFromTsConfig: true,
+        skipLoadingLibFiles: true,
         manipulationSettings: {
             quoteKind: QuoteKind.Single,
         },
@@ -70,15 +76,12 @@ export async function generate(
     const modelNames: string[] = [];
     const modelFields = new Map<string, Map<string, Field>>();
     const queryOutputTypes: OutputType[] = [];
-    const getSourceFile = (args: { type: string; name: string }) => {
-        const filePath = generateFileName({
-            modelNames,
-            name: args.name,
-            type: args.type,
-            template: config.outputFilePattern,
-        });
-        return project.getSourceFile(filePath) || project.createSourceFile(filePath);
-    };
+    const getSourceFile = factoryGetSourceFile({
+        output: generator.output,
+        project,
+        modelNames,
+        outputFilePattern: config.outputFilePattern,
+    });
     const {
         datamodel,
         schema: { inputObjectTypes, outputObjectTypes, enumTypes },
@@ -98,7 +101,7 @@ export async function generate(
     };
 
     if (connectCallback) {
-        await connectCallback(eventEmitter);
+        await connectCallback(eventEmitter, eventArguments);
     }
 
     await eventEmitter.emit('Begin', eventArguments);
@@ -106,6 +109,8 @@ export async function generate(
     for (const model of datamodel.models) {
         await eventEmitter.emit('Model', model, eventArguments);
     }
+
+    await eventEmitter.emit('PostBegin', eventArguments);
 
     for (const enumType of enumTypes.prisma.concat(enumTypes.model || [])) {
         await eventEmitter.emit('EnumType', enumType, eventArguments);
