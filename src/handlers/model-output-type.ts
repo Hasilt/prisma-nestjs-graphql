@@ -14,6 +14,7 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
     const { getSourceFile, models, config, modelFields } = args;
 
     const model = models.get(outputType.name);
+    console.log('model', model);
     assert(model);
     const fileType = 'model';
     const sourceFile = getSourceFile({

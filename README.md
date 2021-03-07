@@ -164,8 +164,17 @@ export class User {
 
 -   new format of custom type
 
-    ```
-    type_{schemaType}_{key} = "{value}"
-    schemaType
+        ```
+        decorators_validator_name = "Validator"
+        decorators_validator_from = "class-validator"
 
-    ```
+        ```
+
+        old
+        ```
+        types_Decimal_fieldType = "Decimal"
+        types_Decimal_fieldModule = "decimal.js"
+        types_Decimal_graphqlType = "GraphQLDecimal"
+        types_Decimal_graphqlModule = "graphql-type-decimal"
+
+        ```
