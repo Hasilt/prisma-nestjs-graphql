@@ -166,9 +166,13 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
     }
 
     const diagnostics = sourceFile.getPreEmitDiagnostics().map(d => ({
+        start: d.getStart(),
+        length: d.getLength(),
+        getSource: d.getSource(),
         getMessageText: d.getMessageText(),
         getLineNumber: d.getLineNumber(),
         getCategory: d.getCategory(),
+        x: sourceFile.getText().substr(d.getStart(), d.getLength()),
         related: d.compilerObject.relatedInformation?.map(i => i.messageText),
     }));
     console.dir(diagnostics, { depth: 4 });
