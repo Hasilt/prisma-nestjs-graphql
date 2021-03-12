@@ -1,10 +1,10 @@
-import { isEmpty, map, mapKeys } from 'lodash';
+import { isEmpty, map, mapKeys, trim } from 'lodash';
 import { Node, SourceFile } from 'ts-morph';
 
 import { DMMF, EventArguments, Field, FieldMeta } from '../types';
 
 export function modelData(model: DMMF.Model, args: EventArguments) {
-    const { modelNames, models, modelFields, config, playground } = args;
+    const { modelNames, models, modelFields, config } = args;
     modelNames.push(model.name);
     models.set(model.name, model);
 
@@ -13,7 +13,7 @@ export function modelData(model: DMMF.Model, args: EventArguments) {
     for (const field of model.fields) {
         modelFieldsValue.set(field.name, {
             ...field,
-            ...getFieldMeta(field.documentation, config.decorators, playground),
+            ...getFieldMeta(field.documentation, config.decorators),
         });
     }
 }
@@ -21,7 +21,6 @@ export function modelData(model: DMMF.Model, args: EventArguments) {
 function getFieldMeta(
     documentation: string | undefined,
     decorators: Record<string, any>,
-    playground: SourceFile,
 ) {
     const meta: FieldMeta = {
         hideOutput: false,
@@ -45,24 +44,27 @@ function getFieldMeta(
             meta.hideOutput = true;
             lines.splice(index, 1);
         }
-        const match = /^@((\w+)\.)(\w+).*/.exec(line);
+        const match = /^@((\w+)\.\w+)\((.*)\)/.exec(line);
         const decorator = match && decorators[match?.[2]];
-        if (decorator) {
+        if (decorator && match) {
             lines.splice(index, 1);
-            playground
-                .getProject()
-                .createSourceFile(playground.getFilePath(), '', { overwrite: true });
-            const expression = match.input!.slice(match[1].length + 1);
-            playground.insertText(0, expression);
-            const statement = playground.getStatement(statement =>
-                Node.isExpressionStatement(statement),
-            );
-            const callExpression = statement?.compilerNode.expression;
-            const args = callExpression.arguments.map(a => a.getText());
+            // console.log('match', match);
+            // const expression = match.input!.slice(match[1].length + 1);
+            // console.log('expression', expression);
+            // playground.insertText(0, expression);
+            // const statement = playground.getStatement(statement =>
+            //     Node.isExpressionStatement(statement),
+            // );
+            // const callExpression = statement?.compilerNode.expression;
+            // const args = callExpression.arguments.map(a => a.getText());
             meta.decorators.push({
+                name: match[1],
+                namespace: match[2],
                 from: decorator.from,
-                name: callExpression.expression.escapedText,
-                arguments: args,
+                arguments: String(match[3])
+                    .split(',')
+                    .map(s => trim(s))
+                    .filter(Boolean),
             });
         }
     }

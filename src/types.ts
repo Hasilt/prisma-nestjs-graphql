@@ -44,7 +44,6 @@ export type EventArguments = {
     eventEmitter: AwaitEventEmitter;
     typeNames: Set<string>;
     enums: Record<string, DMMF.DatamodelEnum | undefined>;
-    playground: SourceFile;
 };
 
 export type FieldMeta = {

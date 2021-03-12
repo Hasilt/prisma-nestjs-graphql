@@ -1,5 +1,10 @@
 import assert from 'assert';
-import { CommentStatement } from 'ts-morph';
+import {
+    ClassDeclarationStructure,
+    CommentStatement,
+    ImportDeclarationStructure,
+    OptionalKind,
+} from 'ts-morph';
 
 import { generateClass } from '../helpers/generate-class';
 import { generateDecorator } from '../helpers/generate-decorator';
@@ -14,13 +19,17 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
     const { getSourceFile, models, config, modelFields } = args;
 
     const model = models.get(outputType.name);
-    console.log('model', model);
     assert(model);
     const fileType = 'model';
     const sourceFile = getSourceFile({
         name: outputType.name,
         type: fileType,
     });
+
+    const importDeclarations = new Map<
+        string,
+        OptionalKind<ImportDeclarationStructure>
+    >();
 
     const classDeclaration = generateClass({
         decorator: {
@@ -36,9 +45,8 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
         name: outputType.name,
     });
 
-    generateImport({
-        sourceFile,
-        name: 'Field',
+    importDeclarations.set('Field', {
+        namedImports: [{ name: 'Field' }],
         moduleSpecifier: '@nestjs/graphql',
     });
 
@@ -133,17 +141,20 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
         });
 
         for (const decorator of fieldMeta?.decorators ?? []) {
-            generateImport({
-                sourceFile,
-                name: decorator.name,
-                moduleSpecifier: decorator.from,
-            });
+            if (!importDeclarations.has(decorator.namespace)) {
+                importDeclarations.set(decorator.namespace, {
+                    namespaceImport: decorator.namespace,
+                    moduleSpecifier: decorator.from,
+                });
+            }
             propertyDeclaration.insertDecorator(0, {
                 name: decorator.name,
                 arguments: decorator.arguments,
             });
         }
     }
+
+    sourceFile.addImportDeclarations([...importDeclarations.values()]);
 
     // Check re-export, comment generated class if found
     const exportDeclaration = sourceFile.getExportDeclaration(d => {

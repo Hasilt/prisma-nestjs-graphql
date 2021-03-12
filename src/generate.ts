@@ -97,7 +97,6 @@ export async function generate(
         typeNames: new Set<string>(),
         enums: mapKeys(datamodel.enums, x => x.name),
         modelFields,
-        playground: project.createSourceFile('playground.ts', ''),
     };
 
     if (connectCallback) {

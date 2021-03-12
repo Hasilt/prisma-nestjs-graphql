@@ -1357,7 +1357,7 @@ describe('custom decorators', () => {
 
     it('several decorators');
 
-    // it('^', () => console.log(sourceFile.getText()));
+    it('^', () => console.log(sourceFile.getText()));
 });
 
 // const a = sourceFiles.map(s => s.getFilePath());
