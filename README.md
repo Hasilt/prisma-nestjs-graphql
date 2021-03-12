@@ -167,6 +167,13 @@ export class User {
         ```
         decorators_validator_name = "Validator"
         decorators_validator_from = "class-validator"
+        =>
+        /// @Validator.MaxLength(30)
+        name String
+        // =>
+        @Validator.MaxLength(30)
+        @Field(() => String)
+        name: string;
 
         ```
 
@@ -176,5 +183,10 @@ export class User {
         types_Decimal_fieldModule = "decimal.js"
         types_Decimal_graphqlType = "GraphQLDecimal"
         types_Decimal_graphqlModule = "graphql-type-decimal"
+        =>
+        field Decimal
+        =>
+        @Field(() => GraphQLDecimal)
+        field: Decimal;
 
         ```
