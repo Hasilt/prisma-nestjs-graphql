@@ -32,11 +32,6 @@ export type EventArguments = {
     models: Map<string, Model>;
     modelNames: string[];
     modelFields: Map<string, Map<string, Field>>;
-    /**
-     * Special output types (Mutation, Query) will be processed later
-     * in generation aggregate inputs.
-     */
-    queryOutputTypes: OutputType[];
     config: GeneratorConfiguration;
     project: Project;
     output: string;

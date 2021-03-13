@@ -120,6 +120,10 @@ export async function generate(
     }
 
     for (const outputType of outputObjectTypes.prisma) {
+        if (['Query', 'Mutation'].includes(outputType.name)) {
+            queryOutputTypes.push(outputType);
+            continue;
+        }
         await eventEmitter.emit('OutputType', outputType, eventArguments);
     }
 

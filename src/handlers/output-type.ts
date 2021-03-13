@@ -15,15 +15,9 @@ export function outputType(outputType: OutputType, args: EventArguments) {
         models,
         config,
         eventEmitter,
-        queryOutputTypes,
         modelFields,
         modelNames,
     } = args;
-
-    if (['Query', 'Mutation'].includes(outputType.name)) {
-        queryOutputTypes.push(outputType);
-        return;
-    }
 
     const fileType = 'output';
     const modelName = getModelName({
