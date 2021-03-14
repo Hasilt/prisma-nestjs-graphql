@@ -3,6 +3,7 @@ import AwaitEventEmitter from 'await-event-emitter';
 import { Project, SourceFile } from 'ts-morph';
 
 import { createConfig } from './helpers/create-config';
+import { FieldMeta } from './helpers/parse-field-meta';
 
 export { DMMF };
 
@@ -41,9 +42,6 @@ export type EventArguments = {
     enums: Record<string, DMMF.DatamodelEnum | undefined>;
 };
 
-export type FieldMeta = {
-    hideOutput: boolean;
-    decorators: any[];
-};
+export { FieldMeta };
 
-export type Field = DMMF.Field & { meta: FieldMeta };
+export type Field = DMMF.Field & FieldMeta;

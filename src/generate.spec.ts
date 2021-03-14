@@ -1329,6 +1329,10 @@ describe('custom decorators', () => {
                 name String
                 /// @Validator.MinLength()
                 family String
+                /// @Validator.MaxLength(50, {
+                ///   message: 'Job title is too long',
+                /// })
+                job String
             }`,
             options: [
                 `decorators_validator_name = "Validator"`,
