@@ -1416,29 +1416,5 @@ describe('custom decorators', () => {
 
     it('several decorators');
 
-    it('^', () => console.log(sourceFile.getText()));
+    // it('^', () => console.log(sourceFile.getText()));
 });
-
-// const a = sourceFiles.map(s => s.getFilePath());
-// sourceFile = sourceFiles.find(s =>
-//     s.getFilePath().endsWith('aggregate.output.ts'),
-// )!;
-// console.log('sourceFile.getText()', sourceFile.getText());
-// // console.log('a', a);
-// it.only('only', async () => {
-//     await testGenerate({
-//         schema: `
-//             model BuildOutput {
-//               id String @id
-//               BuildAction BuildAction[]
-//             }
-//             model BuildAction {
-//               id String @id
-//               output BuildOutput
-//             }
-//             `,
-//         options: [],
-//     });
-// });
-
-// it('^', () => console.log(sourceFile.getText()));

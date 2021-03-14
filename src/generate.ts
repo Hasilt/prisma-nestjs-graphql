@@ -68,7 +68,6 @@ export async function generate(
     const project = new Project({
         tsConfigFilePath: config.tsConfigFilePath,
         skipAddingFilesFromTsConfig: true,
-        skipLoadingLibFiles: true,
         manipulationSettings: {
             quoteKind: QuoteKind.Single,
         },

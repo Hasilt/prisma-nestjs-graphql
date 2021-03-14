@@ -44,4 +44,4 @@ export type EventArguments = {
 
 export { FieldMeta };
 
-export type Field = DMMF.Field & FieldMeta;
+export type Field = DMMF.Field & { meta: FieldMeta };

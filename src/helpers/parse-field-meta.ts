@@ -15,7 +15,7 @@ const project = new Project({
 
 export function parseFieldMeta(
     text: string,
-): { documentation: string | undefined } & FieldMeta {
+): { documentation: string | undefined; meta: FieldMeta } {
     let hideOutput = false;
     const decorators: FieldMeta['decorators'] = [];
     const sourceFile = project.createSourceFile('x.ts', `class X { ${text} x }`, {
@@ -60,5 +60,5 @@ export function parseFieldMeta(
         trim(sourceFile.getText().slice('class X {'.length, -'x }'.length)) ||
         undefined;
 
-    return { documentation, hideOutput, decorators };
+    return { documentation, meta: { hideOutput, decorators } };
 }
