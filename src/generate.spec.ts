@@ -10,6 +10,7 @@ import {
 } from 'ts-morph';
 
 import { generate } from './generate';
+import { generateFileName } from './helpers/generate-file-name';
 import {
     createGeneratorOptions,
     getFieldOptions,
@@ -42,10 +43,22 @@ async function testGenerate(args: {
     const connectCallback = (emitter: AwaitEventEmitter) => {
         emitter.off('GenerateFiles');
         if (createSouceFile) {
-            emitter.on('PostBegin', ({ getSourceFile }: EventArguments) => {
-                const sourceFile = getSourceFile(createSouceFile);
-                sourceFile.insertText(0, createSouceFile.text);
-            });
+            emitter.on(
+                'PostBegin',
+                ({ config, project, output, modelNames }: EventArguments) => {
+                    const filePath = generateFileName({
+                        type: createSouceFile.type,
+                        name: createSouceFile.name,
+                        modelNames,
+                        template: config.outputFilePattern,
+                    });
+                    project.createSourceFile(
+                        `${output}/${filePath}`,
+                        createSouceFile.text,
+                        { overwrite: true },
+                    );
+                },
+            );
         }
         emitter.on('End', (args: { project: Project }) => {
             ({ project } = args);
@@ -53,6 +66,7 @@ async function testGenerate(args: {
     };
     await generate({
         ...(await createGeneratorOptions(schema, options)),
+        skipAddOutputSourceFiles: true,
         connectCallback,
     });
 
@@ -95,6 +109,11 @@ describe('model with one id int', () => {
             sourceFile = project.getSourceFile(s =>
                 s.getFilePath().endsWith('user.model.ts'),
             )!;
+        });
+
+        it('class should be exported', () => {
+            const [classFile] = sourceFile.getClasses();
+            expect(classFile.isExported()).toBe(true);
         });
 
         it('argument decorated id', () => {
@@ -145,6 +164,13 @@ describe('model with one id int', () => {
                 .getStructure()?.arguments?.[0] as string | undefined;
             expect(decoratorArgument).toContain(`description: "User really"`);
         });
+
+        it('has import objecttype', () => {
+            expect(getImportDeclarations(sourceFile)).toContainEqual({
+                name: 'ObjectType',
+                specifier: '@nestjs/graphql',
+            });
+        });
     });
 
     describe('aggregate user', () => {
@@ -155,6 +181,18 @@ describe('model with one id int', () => {
         });
 
         // it('', () => console.log(sourceFile.getText()));
+
+        it('class should be exported', () => {
+            const [classFile] = sourceFile.getClasses();
+            expect(classFile.isExported()).toBe(true);
+        });
+
+        it('contains decorator ObjectType', () => {
+            expect(getImportDeclarations(sourceFile)).toContainEqual({
+                name: 'ObjectType',
+                specifier: '@nestjs/graphql',
+            });
+        });
 
         it('count', () => {
             const structure = sourceFile
@@ -176,6 +214,8 @@ describe('model with one id int', () => {
                 ?.getProperty(p => p.getName() === 'id')
                 ?.getStructure()!;
         });
+
+        // it('', () => console.log(sourceFile.getText()));
 
         it('id property should be Int/number', () => {
             expect(propertyStructure.type).toEqual('number');
@@ -220,7 +260,7 @@ describe('model with one id int', () => {
 
         it('field decorator IntFilter nullable', () => {
             const argument = getFieldOptions(sourceFile, 'id');
-            expect(argument).toContain('nullable: true');
+            expect(argument).toMatch(/nullable:\s*true/);
         });
 
         it('property AND has one type', () => {
@@ -231,13 +271,20 @@ describe('model with one id int', () => {
     });
 
     describe('aggregate user args', () => {
+        let classFile: ClassDeclaration;
         before(() => {
             sourceFile = project.getSourceFile(s =>
                 s.getFilePath().endsWith('aggregate-user.args.ts'),
             )!;
+            classFile = sourceFile.getClass(() => true)!;
         });
 
         // it('', () => console.log(sourceFile.getText()));
+
+        it('decorator name args', () => {
+            const decorator = classFile.getDecorator('ArgsType');
+            expect(decorator).toBeTruthy();
+        });
 
         it('no duplicated properties', () => {
             const names = sourceFile
@@ -305,6 +352,7 @@ it('duplicated fields in exising file', async () => {
             type: 'input',
             name: 'UserCreateInput',
             text: `
+            import { Int } from '@nestjs/graphql';
             @InputType()
             export class UserCreateInput {
                 @Field(() => String, {
@@ -413,7 +461,7 @@ describe('one model with scalar types', () => {
         it('equals is optional', () => {
             const structure = getPropertyStructure(sourceFile, 'equals');
             expect(structure?.hasQuestionToken).toEqual(true);
-            expect(getFieldOptions(sourceFile, 'equals')).toContain('nullable: true');
+            expect(getFieldOptions(sourceFile, 'equals')).toMatch(/nullable:\s*true/);
         });
 
         it('not property should be object type', () => {
@@ -494,6 +542,11 @@ describe('one model with scalar types', () => {
 
         // it('', () => console.log(sourceFile.getText()));
 
+        it('valid imports', () => {
+            const sourceText = sourceFile.getText();
+            expect(sourceText).not.toContain("import ';");
+        });
+
         it('imports', () => {
             const imports = getImportDeclarations(sourceFile);
             expect(imports).toContainEqual({
@@ -519,6 +572,8 @@ describe('one model with scalar types', () => {
         it('data property (json)', () => {
             expect(getFieldType(sourceFile, 'data')).toEqual('() => GraphQLJSON');
         });
+
+        // it('', () => console.log(sourceFile.getText()));
     });
 
     describe('json filter', () => {
