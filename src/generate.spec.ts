@@ -1372,12 +1372,9 @@ describe('custom input decorators', () => {
                 id Int @id
                 /// @Validator.MaxLength(30)
                 name String
-                /// @Validator.MaxLength(50, {
-                ///    message: 'Custom message'
-                /// })
-                title String
             }`,
             options: [
+                `outputFilePattern = "{name}.{type}.ts"`,
                 `decorators_validator_name = "Validator"`,
                 `decorators_validator_from = "class-validator"`,
                 `decorators_validator_input = true`,
@@ -1390,17 +1387,15 @@ describe('custom input decorators', () => {
         before(() => setSourceFile('user.model.ts'));
 
         it('model should not have metadata in documentation', () => {
-            expect(d('name')?.arguments[1]).not.toContain('documentation');
+            expect(d('name')?.arguments?.[1]).not.toContain('documentation');
         });
     });
 
-    // describe('custom input decorators in user create input', () => {
-    //     before(() => {
-    //         sourceFile = project.getSourceFile(s =>
-    //             s.getFilePath().endsWith('/user-create.input'),
-    //         )!;
-    //     });
-    // });
+    describe('custom input decorators in user create input', () => {
+        before(() => setSourceFile('user-create.input.ts'));
+
+        it('^', () => console.log(sourceFile.getText()));
+    });
 
     // it('model has no maxlength decorator', () => {
     //     const decorator = p('name')?.decorators?.find(d => d.name === 'MaxLength');

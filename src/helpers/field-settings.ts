@@ -1,4 +1,4 @@
-import { chunk, fromPairs, trim } from 'lodash';
+import { trim } from 'lodash';
 
 export type FieldSettings = {
     hideOutput: boolean;
