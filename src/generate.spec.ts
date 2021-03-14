@@ -1392,6 +1392,8 @@ describe('custom decorators', () => {
             options: [
                 `decorators_validator_name = "Validator"`,
                 `decorators_validator_from = "class-validator"`,
+                `decorators_validator_input = true`,
+                `decorators_validator_output = false`,
             ],
         });
     });

@@ -1,7 +1,7 @@
 import { chunk, fromPairs, trim } from 'lodash';
 import { Project } from 'ts-morph';
 
-export type FieldMeta = {
+export type FieldSettings = {
     hideOutput: boolean;
     decorators: {
         name: string;
@@ -13,11 +13,11 @@ const project = new Project({
     useInMemoryFileSystem: true,
 });
 
-export function parseFieldMeta(
+export function parseFieldSettings(
     text: string,
-): { documentation: string | undefined; meta: FieldMeta } {
+): FieldSettings & { documentation: string | undefined } {
     let hideOutput = false;
-    const decorators: FieldMeta['decorators'] = [];
+    const decorators: FieldSettings['decorators'] = [];
     const sourceFile = project.createSourceFile('x.ts', `class X { ${text} x }`, {
         overwrite: true,
     });
@@ -60,5 +60,9 @@ export function parseFieldMeta(
         trim(sourceFile.getText().slice('class X {'.length, -'x }'.length)) ||
         undefined;
 
-    return { documentation, meta: { hideOutput, decorators } };
+    return {
+        documentation,
+        hideOutput,
+        decorators,
+    };
 }

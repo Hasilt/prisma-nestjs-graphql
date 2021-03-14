@@ -16,7 +16,7 @@ export function outputType(outputType: OutputType, args: EventArguments) {
         models,
         config,
         eventEmitter,
-        modelFields,
+        fieldSettings,
         modelNames,
     } = args;
     const importDeclarations = new ImportDeclarationMap();
@@ -70,8 +70,7 @@ export function outputType(outputType: OutputType, args: EventArguments) {
     for (const field of outputType.fields) {
         const { location, isList, type } = field.outputType;
         const outputTypeName = getOutputTypeName(String(type));
-        const modelField = model && modelFields.get(model.name)?.get(field.name);
-        const fieldMeta = modelField?.meta;
+        const settings = model && fieldSettings.get(model.name)?.get(field.name);
         const customType = config.types[outputTypeName];
 
         // console.log({
@@ -100,7 +99,7 @@ export function outputType(outputType: OutputType, args: EventArguments) {
 
         classStructure.properties?.push(property);
 
-        if (fieldMeta?.hideOutput) {
+        if (settings?.hideOutput) {
             importDeclarations.add('HideField', {
                 namedImports: [{ name: 'HideField' }],
                 moduleSpecifier: '@nestjs/graphql',

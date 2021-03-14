@@ -19,7 +19,7 @@ import { typeNames } from './handlers/type-names';
 import { warning } from './handlers/warning';
 import { createConfig } from './helpers/create-config';
 import { factoryGetSourceFile } from './helpers/factory-get-souce-file';
-import { DMMF, EventArguments, Field, Model, OutputType } from './types';
+import { DMMF, EventArguments, Field, FieldSettings, Model, OutputType } from './types';
 
 export async function generate(
     args: GeneratorOptions & {
@@ -83,6 +83,7 @@ export async function generate(
     const models = new Map<string, Model>();
     const modelNames: string[] = [];
     const modelFields = new Map<string, Map<string, Field>>();
+    const fieldSettings = new Map<string, Map<string, FieldSettings>>();
     const queryOutputTypes: OutputType[] = [];
     const getSourceFile = factoryGetSourceFile({
         output: generator.output,
@@ -98,14 +99,14 @@ export async function generate(
         models,
         config,
         modelNames,
-        queryOutputTypes,
+        modelFields,
+        fieldSettings,
         project,
         output: generator.output,
         getSourceFile,
         eventEmitter,
         typeNames: new Set<string>(),
         enums: mapKeys(datamodel.enums, x => x.name),
-        modelFields,
     };
 
     if (connectCallback) {

@@ -16,10 +16,10 @@ import { getPropertyType } from '../helpers/get-property-type';
 import { EventArguments, OutputType } from '../types';
 
 export function modelOutputType(outputType: OutputType, args: EventArguments) {
-    const { getSourceFile, models, config, modelFields } = args;
+    const { getSourceFile, models, config, modelFields, fieldSettings } = args;
 
     const model = models.get(outputType.name);
-    assert(model);
+    assert(model, `Cannot find model by name ${outputType.name}`);
     const fileType = 'model';
     const sourceFile = getSourceFile({
         name: outputType.name,
@@ -58,9 +58,9 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
 
         const { location, isList, type } = field.outputType;
         const outputTypeName = String(type);
-        const modelField = modelFields.get(model.name)?.get(field.name);
-        const fieldMeta = modelField?.meta;
         const customType = config.types[outputTypeName];
+        const modelField = modelFields.get(model.name)?.get(field.name);
+        const settings = fieldSettings.get(model.name)?.get(field.name);
 
         // console.log({
         //     'field.outputType': field.outputType,
@@ -86,7 +86,7 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
             isList,
         });
 
-        if (fieldMeta?.hideOutput) {
+        if (settings?.hideOutput) {
             generateImport({
                 sourceFile,
                 name: 'HideField',
@@ -140,18 +140,18 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
             description: modelField?.documentation,
         });
 
-        for (const decorator of fieldMeta?.decorators ?? []) {
-            if (!importDeclarations.has(decorator.namespace)) {
-                importDeclarations.set(decorator.namespace, {
-                    namespaceImport: decorator.namespace,
-                    moduleSpecifier: decorator.from,
-                });
-            }
-            propertyDeclaration.insertDecorator(0, {
-                name: decorator.name,
-                arguments: decorator.arguments,
-            });
-        }
+        // for (const decorator of fieldMeta?.decorators ?? []) {
+        //     if (!importDeclarations.has(decorator.namespace)) {
+        //         importDeclarations.set(decorator.namespace, {
+        //             namespaceImport: decorator.namespace,
+        //             moduleSpecifier: decorator.from,
+        //         });
+        //     }
+        //     propertyDeclaration.insertDecorator(0, {
+        //         name: decorator.name,
+        //         arguments: decorator.arguments,
+        //     });
+        // }
     }
 
     sourceFile.addImportDeclarations([...importDeclarations.values()]);

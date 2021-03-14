@@ -33,12 +33,11 @@ export function createConfig(data: Record<string, string | undefined>) {
     return {
         outputFilePattern,
         tsConfigFilePath: 'tsconfig.json' as string,
-        combineScalarFilters: ['true', '1', 'on'].includes(
-            (config.combineScalarFilters as Nullable<string>) ?? 'false',
-        ),
-        noAtomicOperations: ['true', '1', 'on'].includes(
-            (config.noAtomicOperations as Nullable<string>) ?? 'false',
-        ),
+        combineScalarFilters: toBoolean(config.combineScalarFilters),
+        noAtomicOperations: toBoolean(config.noAtomicOperations),
+        reExportAll: toBoolean(config.reExportAll),
+        decorators: mapKeys(config.decorators as Record<string, any>, 'name'),
+        $warnings,
         types: merge(
             {},
             {
@@ -50,10 +49,9 @@ export function createConfig(data: Record<string, string | undefined>) {
             },
             config.types,
         ) as Record<string, Nullable<TypeRecord>>,
-        reExportAll: ['true', '1', 'on'].includes(
-            (config.reExportAll as Nullable<string>) ?? 'false',
-        ),
-        decorators: mapKeys(config.decorators, 'name'),
-        $warnings,
     };
+}
+
+function toBoolean(value: unknown) {
+    return ['true', '1', 'on'].includes(String(value));
 }

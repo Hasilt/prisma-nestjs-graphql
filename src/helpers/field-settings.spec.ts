@@ -1,22 +1,22 @@
 import expect from 'expect';
 
-import { parseFieldMeta } from './parse-field-meta';
+import { parseFieldSettings } from './field-settings';
 
-describe('parseFieldMeta', () => {
+describe('parseFieldSettings', () => {
     it('simple maxlength', () => {
-        const result = parseFieldMeta('@Validator.MaxLength(30)');
+        const result = parseFieldSettings('@Validator.MaxLength(30)');
         expect(result.decorators[0].name).toEqual('Validator.MaxLength');
         expect(result.decorators[0].arguments).toEqual(['30']);
     });
 
     it('invalid validator minlength', () => {
-        const result = parseFieldMeta('@Validator.MinLength()');
+        const result = parseFieldSettings('@Validator.MinLength()');
         expect(result.decorators[0].name).toEqual('Validator.MinLength');
         expect(result.decorators[0].arguments).toEqual([]);
     });
 
     it('multiple lines', () => {
-        const result = parseFieldMeta(
+        const result = parseFieldSettings(
             `@Validator.MaxLength(50, {\nmessage: 'Job title is too long'\n})`,
         );
         expect(result.decorators[0].name).toEqual('Validator.MaxLength');
@@ -27,25 +27,25 @@ describe('parseFieldMeta', () => {
     });
 
     it('hidefield decorator as meta', () => {
-        const result = parseFieldMeta(`@HideField()`);
+        const result = parseFieldSettings(`@HideField()`);
         expect(result.hideOutput).toEqual(true);
         expect(result.decorators).toEqual([]);
     });
 
     it('typegraphql output', () => {
-        const result = parseFieldMeta(`@TypeGraphQL.omit(output: true)`);
+        const result = parseFieldSettings(`@TypeGraphQL.omit(output: true)`);
         expect(result.hideOutput).toEqual(true);
         expect(result.decorators).toEqual([]);
     });
 
     it('empty string', () => {
-        const result = parseFieldMeta(``);
+        const result = parseFieldSettings(``);
         expect(result.hideOutput).toEqual(false);
         expect(result.decorators).toEqual([]);
     });
 
     it('several decorators', () => {
-        const result = parseFieldMeta(`@Max(50) @Min(0)`);
+        const result = parseFieldSettings(`@Max(50) @Min(0)`);
         expect(result.hideOutput).toEqual(false);
         expect(result.decorators).toEqual([
             {
@@ -60,7 +60,7 @@ describe('parseFieldMeta', () => {
     });
 
     it('mixed documentation and decorator', () => {
-        const result = parseFieldMeta(`User really\n@Max(50)`);
+        const result = parseFieldSettings(`User really\n@Max(50)`);
         expect(result.hideOutput).toEqual(false);
         expect(result.documentation).toEqual('User really');
         expect(result.decorators).toEqual([
