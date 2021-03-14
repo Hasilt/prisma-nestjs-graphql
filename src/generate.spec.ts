@@ -29,6 +29,9 @@ let imports: ReturnType<typeof getImportDeclarations>;
 
 const p = (name: string) => getPropertyStructure(sourceFile, name);
 const d = (name: string) => getPropertyStructure(sourceFile, name)?.decorators?.[0];
+const setSourceFile = (name: string) => {
+    sourceFile = project.getSourceFile(s => s.getFilePath().endsWith(name))!;
+};
 
 async function testGenerate(args: {
     schema: string;
@@ -105,11 +108,7 @@ describe('model with one id int', () => {
     });
 
     describe('model', () => {
-        before(() => {
-            sourceFile = project.getSourceFile(s =>
-                s.getFilePath().endsWith('user.model.ts'),
-            )!;
-        });
+        before(() => setSourceFile('user.model.ts'));
 
         it('class should be exported', () => {
             const [classFile] = sourceFile.getClasses();
@@ -175,9 +174,7 @@ describe('model with one id int', () => {
 
     describe('aggregate user', () => {
         before(() => {
-            sourceFile = project.getSourceFile(s =>
-                s.getFilePath().endsWith('aggregate-user.output.ts'),
-            )!;
+            setSourceFile('aggregate-user.output.ts');
         });
 
         // it('', () => console.log(sourceFile.getText()));
@@ -206,9 +203,7 @@ describe('model with one id int', () => {
 
     describe('user count aggregate (UserCountAggregate)', () => {
         before(() => {
-            sourceFile = project.getSourceFile(s =>
-                s.getFilePath().endsWith('user-count-aggregate.output.ts'),
-            )!;
+            setSourceFile('user-count-aggregate.output.ts');
             propertyStructure = sourceFile
                 .getClass(() => true)
                 ?.getProperty(p => p.getName() === 'id')
@@ -1277,9 +1272,7 @@ describe('export all from index', () => {
     });
 
     it('user/index', () => {
-        sourceFile = project.getSourceFile(s =>
-            s.getFilePath().endsWith('/user/index.ts'),
-        )!;
+        setSourceFile('/user/index.ts');
         // sourceFile = project.getSourceFile('/user/index.ts')!;
         expect(sourceFile).toBeTruthy();
         expect(sourceFile.getText()).toContain(
@@ -1297,40 +1290,37 @@ describe('export all from index', () => {
     });
 });
 
-describe('hide field', () => {
+describe('custom setting hide field', () => {
     before(async () => {
         await testGenerate({
             schema: `
             model User {
                 id String @id
-                /// @TypeGraphQL.omit(output: true)
                 /// Password1
+                /// @TypeGraphQL.omit(output: true)
                 password1 String
-                /// @HideField()
                 /// Password2
+                /// @HideField()
                 password2 String
             }
             `,
             options: [],
         });
-        // const filePaths = sourceFiles.map(s => s.getFilePath());
     });
 
     describe('model', () => {
-        before(() => {
-            sourceFile = project.getSourceFile(s =>
-                s.getFilePath().endsWith('/user.model.ts'),
-            )!;
-        });
+        before(() => setSourceFile('user.model.ts'));
 
         // it('^', () => console.log(sourceFile.getText()));
 
         it('TypeGraphQL omit should hide password1', () => {
+            expect(p('password1')?.decorators).toHaveLength(1);
             expect(d('password1')?.name).toBe('HideField');
             expect(d('password1')?.arguments).toEqual([]);
         });
 
         it('HideField should hide field', () => {
+            expect(p('password1')?.decorators).toHaveLength(1);
             expect(d('password2')?.name).toBe('HideField');
             expect(d('password2')?.arguments).toEqual([]);
         });
@@ -1374,7 +1364,7 @@ it('model with prisma keyword output', async () => {
     });
 });
 
-describe('custom decorators', () => {
+describe('custom input decorators', () => {
     before(async () => {
         await testGenerate({
             schema: `
@@ -1382,12 +1372,10 @@ describe('custom decorators', () => {
                 id Int @id
                 /// @Validator.MaxLength(30)
                 name String
-                /// @Validator.MinLength()
-                family String
                 /// @Validator.MaxLength(50, {
-                ///   message: 'Job title is too long',
+                ///    message: 'Custom message'
                 /// })
-                job String
+                title String
             }`,
             options: [
                 `decorators_validator_name = "Validator"`,
@@ -1397,26 +1385,37 @@ describe('custom decorators', () => {
             ],
         });
     });
-    before(() => {
-        sourceFile = project.getSourceFile(s =>
-            s.getFilePath().endsWith('/user.model.ts'),
-        )!;
-    });
 
-    it('model has MaxLength decorator', () => {
-        const decorator = p('name')?.decorators?.find(d => d.name === 'MaxLength');
-        expect(decorator).toBeTruthy();
-        expect(decorator?.arguments).toEqual(['30']);
-    });
+    describe('user model', () => {
+        before(() => setSourceFile('user.model.ts'));
 
-    it('should have import from class-validator', () => {
-        expect(getImportDeclarations(sourceFile)).toContainEqual({
-            name: 'MaxLength',
-            specifier: 'class-validator',
+        it('model should not have metadata in documentation', () => {
+            expect(d('name')?.arguments[1]).not.toContain('documentation');
         });
     });
 
-    it('several decorators');
+    // describe('custom input decorators in user create input', () => {
+    //     before(() => {
+    //         sourceFile = project.getSourceFile(s =>
+    //             s.getFilePath().endsWith('/user-create.input'),
+    //         )!;
+    //     });
+    // });
+
+    // it('model has no maxlength decorator', () => {
+    //     const decorator = p('name')?.decorators?.find(d => d.name === 'MaxLength');
+    //     expect(decorator).toBeTruthy();
+    //     expect(decorator?.arguments).toEqual(['30']);
+    // });
+
+    // it('should have import from class-validator', () => {
+    //     expect(getImportDeclarations(sourceFile)).toContainEqual({
+    //         name: 'MaxLength',
+    //         specifier: 'class-validator',
+    //     });
+    // });
+
+    // it('several decorators');
 
     // it('^', () => console.log(sourceFile.getText()));
 });

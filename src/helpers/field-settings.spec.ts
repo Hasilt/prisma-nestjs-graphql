@@ -5,24 +5,27 @@ import { parseFieldSettings } from './field-settings';
 describe('parseFieldSettings', () => {
     it('simple maxlength', () => {
         const result = parseFieldSettings('@Validator.MaxLength(30)');
+        expect(result.decorators).toHaveLength(1);
         expect(result.decorators[0].name).toEqual('Validator.MaxLength');
         expect(result.decorators[0].arguments).toEqual(['30']);
     });
 
     it('invalid validator minlength', () => {
         const result = parseFieldSettings('@Validator.MinLength()');
+        expect(result.decorators).toHaveLength(1);
         expect(result.decorators[0].name).toEqual('Validator.MinLength');
         expect(result.decorators[0].arguments).toEqual([]);
     });
 
     it('multiple lines', () => {
         const result = parseFieldSettings(
-            `@Validator.MaxLength(50, {\nmessage: 'Job title is too long'\n})`,
+            `@Validator.MaxLength(50, {\\nmessage: 'Title is too long'\\n})`,
         );
+        expect(result.decorators).toHaveLength(1);
         expect(result.decorators[0].name).toEqual('Validator.MaxLength');
         expect(result.decorators[0].arguments).toEqual([
             '50',
-            `{\nmessage: 'Job title is too long'\n}`,
+            expect.stringContaining(`message: 'Title is too long'`),
         ]);
     });
 
@@ -45,22 +48,23 @@ describe('parseFieldSettings', () => {
     });
 
     it('several decorators', () => {
-        const result = parseFieldSettings(`@Max(50) @Min(0)`);
+        const result = parseFieldSettings(`@V.Max(50)\\n@V.Min(0)`);
         expect(result.hideOutput).toEqual(false);
+        expect(result.decorators).toHaveLength(2);
         expect(result.decorators).toEqual([
             {
-                name: 'Max',
+                name: 'V.Max',
                 arguments: ['50'],
             },
             {
-                name: 'Min',
+                name: 'V.Min',
                 arguments: ['0'],
             },
         ]);
     });
 
     it('mixed documentation and decorator', () => {
-        const result = parseFieldSettings(`User really\n@Max(50)`);
+        const result = parseFieldSettings(`User really\\n@Max(50)`);
         expect(result.hideOutput).toEqual(false);
         expect(result.documentation).toEqual('User really');
         expect(result.decorators).toEqual([

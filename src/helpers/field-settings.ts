@@ -1,64 +1,49 @@
 import { chunk, fromPairs, trim } from 'lodash';
-import { Project } from 'ts-morph';
 
 export type FieldSettings = {
     hideOutput: boolean;
     decorators: {
         name: string;
-        arguments?: string[];
+        arguments: string[] | undefined;
     }[];
 };
-
-const project = new Project({
-    useInMemoryFileSystem: true,
-});
 
 export function parseFieldSettings(
     text: string,
 ): FieldSettings & { documentation: string | undefined } {
     let hideOutput = false;
     const decorators: FieldSettings['decorators'] = [];
-    const sourceFile = project.createSourceFile('x.ts', `class X { ${text} x }`, {
-        overwrite: true,
-    });
-    const testDecorators = sourceFile
-        .getClass(() => true)
-        ?.getProperty('x')
-        ?.getDecorators();
-
-    // sourceFile.getText();
-    // console.log(
-    //     'sourceFile.getText()',
-    //     sourceFile.getText(),
-    //     sourceFile.getStructure(),
-    // );
-
-    for (const testDecorator of testDecorators || []) {
-        const name = testDecorator.getFullName();
-        const arguments_ = testDecorator.getArguments().map(x => x.getText());
-        if (name === 'TypeGraphQL.omit') {
-            const omit = fromPairs(chunk(arguments_, 2));
-            if (omit.output === 'true') {
-                hideOutput = true;
-                continue;
-            }
-        } else if (name === 'HideField') {
+    const matches = text.matchAll(/@(?<name>\w+(\.(\w+))?)\((?<args>.*?)\)/g);
+    for (const match of matches) {
+        text = text.slice(0, match.index);
+        const name = match.groups?.name;
+        if (!name) {
+            continue;
+        }
+        if (
+            name === 'TypeGraphQL.omit' &&
+            match.groups?.args &&
+            /output:\s*true/.test(match.groups.args)
+        ) {
             hideOutput = true;
             continue;
         }
-        decorators.push({
+        if (name === 'HideField') {
+            hideOutput = true;
+            continue;
+        }
+
+        const decorator = {
             name,
-            arguments: arguments_,
-        });
-    }
-    if (testDecorators) {
-        // eslint-disable-next-line unicorn/no-array-for-each
-        testDecorators.forEach(d => d.remove());
+            arguments: (match.groups?.args || '')
+                .split(',')
+                .map(s => trim(s))
+                .filter(Boolean),
+        };
+        decorators.push(decorator);
     }
 
-    const documentation =
-        trim(sourceFile.getText().slice('class X {'.length, -'x }'.length)) ||
-        undefined;
+    const documentation = text.split('\\n').filter(Boolean).join('\\n') || undefined;
 
     return {
         documentation,
