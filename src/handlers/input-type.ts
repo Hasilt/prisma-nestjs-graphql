@@ -24,7 +24,6 @@ export function inputType(
         eventEmitter,
         classDecoratorName,
     } = args;
-    const importDeclarations = new ImportDeclarationMap();
     const sourceFile = getSourceFile({
         name: inputType.name,
         type: fileType,
@@ -41,7 +40,7 @@ export function inputType(
         ],
         properties: [],
     } as ClassDeclarationStructure;
-
+    const importDeclarations = new ImportDeclarationMap();
     importDeclarations
         .set('Field', {
             namedImports: [{ name: 'Field' }],
