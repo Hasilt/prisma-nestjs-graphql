@@ -28,7 +28,7 @@ export function inputType(
         name: inputType.name,
         type: fileType,
     });
-    const classStructure = {
+    const classStructure: ClassDeclarationStructure = {
         kind: StructureKind.Class,
         isExported: true,
         name: inputType.name,
@@ -39,8 +39,8 @@ export function inputType(
             },
         ],
         properties: [],
-    } as ClassDeclarationStructure;
-    const importDeclarations = new ImportDeclarationMap();
+    };
+
     importDeclarations
         .set('Field', {
             namedImports: [{ name: 'Field' }],

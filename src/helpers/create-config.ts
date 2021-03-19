@@ -3,6 +3,7 @@ import { unflatten } from 'flat';
 import { mapKeys, merge, trim } from 'lodash';
 import { Nullable } from 'simplytyped';
 
+import { ReExport } from '../handlers/re-export';
 import { TypeRecord } from '../types';
 
 export function createConfig(data: Record<string, string | undefined>) {
@@ -30,25 +31,32 @@ export function createConfig(data: Record<string, string | undefined>) {
         );
     }
 
+    if (config.reExportAll) {
+        $warnings.push(`Option 'reExportAll' is deprecated, use 'reExport' instead`);
+        if (toBoolean(config.reExportAll)) {
+            config.reExport = 'All';
+        }
+    }
+
+    const types = merge(
+        {
+            Json: {
+                fieldType: 'any',
+                graphqlType: 'GraphQLJSON',
+                graphqlModule: 'graphql-type-json',
+            },
+        },
+        config.types,
+    ) as Record<string, Nullable<TypeRecord>>;
+
     return {
         outputFilePattern,
         tsConfigFilePath: 'tsconfig.json' as string,
         combineScalarFilters: toBoolean(config.combineScalarFilters),
         noAtomicOperations: toBoolean(config.noAtomicOperations),
-        reExportAll: toBoolean(config.reExportAll),
-        decorators: mapKeys(config.decorators as Record<string, any>, 'name'),
+        types,
+        reExport: (ReExport[String(config.reExport)] || ReExport.None) as ReExport,
         $warnings,
-        types: merge(
-            {},
-            {
-                Json: {
-                    fieldType: 'any',
-                    graphqlType: 'GraphQLJSON',
-                    graphqlModule: 'graphql-type-json',
-                },
-            },
-            config.types,
-        ) as Record<string, Nullable<TypeRecord>>,
     };
 }
 

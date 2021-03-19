@@ -41,9 +41,11 @@ async function testGenerate(args: {
         name: string;
         type: string;
     };
+    onConnect?: (emitter: AwaitEventEmitter) => void;
 }) {
-    const { schema, options, createSouceFile } = args;
+    const { schema, options, createSouceFile, onConnect } = args;
     const connectCallback = (emitter: AwaitEventEmitter) => {
+        onConnect && onConnect(emitter);
         emitter.off('GenerateFiles');
         if (createSouceFile) {
             emitter.on(
@@ -1260,48 +1262,135 @@ describe('combine scalar filters', () => {
     });
 });
 
-describe('export all from index', () => {
-    before(async () => {
-        await testGenerate({
-            schema: `
+describe('reexport option', () => {
+    describe('reexport Directories clean', () => {
+        before(async () => {
+            await testGenerate({
+                schema: `
             model User {
                 id Int @id
             }`,
-            options: ['reExportAll = true'],
+                options: ['reExport = Directories'],
+            });
+        });
+
+        it('user/index', () => {
+            sourceFile = project.getSourceFile(s =>
+                s.getFilePath().endsWith('/user/index.ts'),
+            )!;
+            // sourceFile = project.getSourceFile('/user/index.ts')!;
+            expect(sourceFile).toBeTruthy();
+            expect(sourceFile.getText()).toContain(
+                `export { AggregateUser } from './aggregate-user.output'`,
+            );
+            expect(sourceFile.getText()).toContain(
+                `export { User } from './user.model'`,
+            );
         });
     });
 
-    it('user/index', () => {
-        setSourceFile('/user/index.ts');
-        // sourceFile = project.getSourceFile('/user/index.ts')!;
-        expect(sourceFile).toBeTruthy();
-        expect(sourceFile.getText()).toContain(
-            `export { AggregateUser } from './aggregate-user.output'`,
-        );
-        expect(sourceFile.getText()).toContain(`export { User } from './user.model'`);
+    describe('reexport Directories with existing file', () => {
+        before(async () => {
+            await testGenerate({
+                schema: `
+            model User {
+                id Int @id
+            }`,
+                options: ['reExport = Directories'],
+                onConnect(emitter) {
+                    emitter.on('PostBegin', ({ project, output }: EventArguments) => {
+                        project.createSourceFile(
+                            `${output}/user/index.ts`,
+                            `export { User } from './user.model';`,
+                            { overwrite: true },
+                        );
+                    });
+                },
+            });
+        });
+
+        it('user index should not contain duplicate identifer', () => {
+            sourceFile = project.getSourceFile(s =>
+                s.getFilePath().endsWith('/user/index.ts'),
+            )!;
+            exports = sourceFile.getExportDeclarations().map(x => ({
+                specifier: x.getModuleSpecifierValue(),
+                name: x.getNamedExports()[0].getName(),
+            }));
+            expect(exports).not.toContainEqual(
+                expect.objectContaining({ specifier: './index' }),
+            );
+        });
     });
 
-    it('root index', () => {
-        const rootDirectory = project.getRootDirectories()[0].getParent();
-        const sourceFile = rootDirectory?.getSourceFile('index.ts')!;
-        expect(sourceFile).toBeTruthy();
-        expect(sourceFile.getText()).toContain(`SortOrder } from './prisma'`);
-        expect(sourceFile.getText()).toContain(`from './user'`);
+    describe('reexport Single', () => {
+        before(async () => {
+            await testGenerate({
+                schema: `
+            model User {
+                id Int @id
+            }`,
+                options: ['reExport = Single'],
+            });
+        });
+
+        it('root index', () => {
+            const rootDirectory = project.getRootDirectories()[0].getParent();
+            const sourceFile = rootDirectory?.getSourceFileOrThrow('index.ts')!;
+            expect(sourceFile).toBeTruthy();
+            expect(sourceFile.getText()).toContain(
+                `export { SortOrder } from './prisma/sort-order.enum'`,
+            );
+            expect(sourceFile.getText()).toContain(
+                `export { User } from './user/user.model'`,
+            );
+        });
+    });
+
+    describe('reexport All', () => {
+        before(async () => {
+            await testGenerate({
+                schema: `
+            model User {
+                id Int @id
+            }`,
+                options: ['reExport = All'],
+            });
+        });
+
+        it('root index', () => {
+            const rootDirectory = project.getRootDirectories()[0].getParent();
+            const sourceFile = rootDirectory?.getSourceFileOrThrow('index.ts')!;
+            expect(sourceFile).toBeTruthy();
+            expect(sourceFile.getText()).toMatch(
+                /export {.*AffectedRows,.*} from '\.\/prisma'/,
+            );
+            expect(sourceFile.getText()).toMatch(
+                /export {.*UserWhereInput,.*} from '\.\/user'/,
+            );
+        });
+
+        it('user index', () => {
+            sourceFile = project.getSourceFile(s =>
+                s.getFilePath().endsWith('/user/index.ts'),
+            )!;
+            // sourceFile = project.getSourceFile('/user/index.ts')!;
+            expect(sourceFile).toBeTruthy();
+            expect(sourceFile.getText()).toContain(
+                `export { AggregateUser } from './aggregate-user.output'`,
+            );
+            expect(sourceFile.getText()).toContain(
+                `export { User } from './user.model'`,
+            );
+        });
     });
 });
 
-<<<<<<< HEAD
-describe('custom setting hide field', () => {
-    before(async () => {
-        await testGenerate({
-            schema: `
-=======
 describe('hide field', () => {
     describe('scalar field', () => {
         before(async () => {
             await testGenerate({
                 schema: `
->>>>>>> master
             model User {
                 id String @id
                 /// Password1
@@ -1316,12 +1405,6 @@ describe('hide field', () => {
             });
             // const filePaths = sourceFiles.map(s => s.getFilePath());
         });
-<<<<<<< HEAD
-    });
-
-    describe('model', () => {
-        before(() => setSourceFile('user.model.ts'));
-=======
 
         describe('model', () => {
             before(() => {
@@ -1329,22 +1412,9 @@ describe('hide field', () => {
                     s.getFilePath().endsWith('/user.model.ts'),
                 )!;
             });
->>>>>>> master
 
             // it('^', () => console.log(sourceFile.getText()));
 
-<<<<<<< HEAD
-        it('TypeGraphQL omit should hide password1', () => {
-            expect(p('password1')?.decorators).toHaveLength(1);
-            expect(d('password1')?.name).toBe('HideField');
-            expect(d('password1')?.arguments).toEqual([]);
-        });
-
-        it('HideField should hide field', () => {
-            expect(p('password1')?.decorators).toHaveLength(1);
-            expect(d('password2')?.name).toBe('HideField');
-            expect(d('password2')?.arguments).toEqual([]);
-=======
             it('TypeGraphQL omit should hide password1', () => {
                 expect(d('password1')?.name).toBe('HideField');
                 expect(d('password1')?.arguments).toEqual([]);
@@ -1366,7 +1436,6 @@ describe('hide field', () => {
                 expect(d('password2')?.name).toBe('HideField');
                 expect(d('password2')?.arguments).toEqual([]);
             });
->>>>>>> master
         });
     });
 
