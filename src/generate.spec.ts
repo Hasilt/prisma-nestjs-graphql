@@ -1290,10 +1290,18 @@ describe('export all from index', () => {
     });
 });
 
+<<<<<<< HEAD
 describe('custom setting hide field', () => {
     before(async () => {
         await testGenerate({
             schema: `
+=======
+describe('hide field', () => {
+    describe('scalar field', () => {
+        before(async () => {
+            await testGenerate({
+                schema: `
+>>>>>>> master
             model User {
                 id String @id
                 /// Password1
@@ -1304,15 +1312,28 @@ describe('custom setting hide field', () => {
                 password2 String
             }
             `,
-            options: [],
+                options: [],
+            });
+            // const filePaths = sourceFiles.map(s => s.getFilePath());
         });
+<<<<<<< HEAD
     });
 
     describe('model', () => {
         before(() => setSourceFile('user.model.ts'));
+=======
 
-        // it('^', () => console.log(sourceFile.getText()));
+        describe('model', () => {
+            before(() => {
+                sourceFile = project.getSourceFile(s =>
+                    s.getFilePath().endsWith('/user.model.ts'),
+                )!;
+            });
+>>>>>>> master
 
+            // it('^', () => console.log(sourceFile.getText()));
+
+<<<<<<< HEAD
         it('TypeGraphQL omit should hide password1', () => {
             expect(p('password1')?.decorators).toHaveLength(1);
             expect(d('password1')?.name).toBe('HideField');
@@ -1323,18 +1344,67 @@ describe('custom setting hide field', () => {
             expect(p('password1')?.decorators).toHaveLength(1);
             expect(d('password2')?.name).toBe('HideField');
             expect(d('password2')?.arguments).toEqual([]);
+=======
+            it('TypeGraphQL omit should hide password1', () => {
+                expect(d('password1')?.name).toBe('HideField');
+                expect(d('password1')?.arguments).toEqual([]);
+            });
+
+            it('HideField should hide field', () => {
+                expect(d('password2')?.name).toBe('HideField');
+                expect(d('password2')?.arguments).toEqual([]);
+            });
+        });
+
+        describe('other outputs', () => {
+            it('user-max-aggregate', () => {
+                sourceFile = project.getSourceFile(s =>
+                    s.getFilePath().endsWith('/user-max-aggregate.output.ts'),
+                )!;
+                expect(d('password1')?.name).toBe('HideField');
+                expect(d('password1')?.arguments).toEqual([]);
+                expect(d('password2')?.name).toBe('HideField');
+                expect(d('password2')?.arguments).toEqual([]);
+            });
+>>>>>>> master
         });
     });
 
-    describe('other outputs', () => {
-        it('user-max-aggregate', () => {
-            sourceFile = project.getSourceFile(s =>
-                s.getFilePath().endsWith('/user-max-aggregate.output.ts'),
-            )!;
-            expect(d('password1')?.name).toBe('HideField');
-            expect(d('password1')?.arguments).toEqual([]);
-            expect(d('password2')?.name).toBe('HideField');
-            expect(d('password2')?.arguments).toEqual([]);
+    describe('hide on non scalar', () => {
+        before(async () => {
+            await testGenerate({
+                schema: `
+                    model User {
+                      id       String @id
+                      /// @HideField()
+                      secret   Secret @relation(fields: [secretId], references: [id])
+                      secretId String
+                    }
+
+                    model Secret {
+                      id    String @id
+                      users User[]
+                    }
+            `,
+                options: [],
+            });
+        });
+
+        describe('model', () => {
+            before(() => {
+                sourceFile = project.getSourceFile(s =>
+                    s.getFilePath().endsWith('/user.model.ts'),
+                )!;
+            });
+
+            it('type should be imported', () => {
+                const imports = getImportDeclarations(sourceFile);
+                expect(imports).toContainEqual(
+                    expect.objectContaining({ name: 'Secret' }),
+                );
+            });
+
+            // it('^', () => console.log(sourceFile.getText()));
         });
     });
 });

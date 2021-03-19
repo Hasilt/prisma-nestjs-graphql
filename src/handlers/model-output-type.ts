@@ -86,16 +86,6 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
             isList,
         });
 
-        if (settings?.hideOutput) {
-            generateImport({
-                sourceFile,
-                name: 'HideField',
-                moduleSpecifier: '@nestjs/graphql',
-            });
-            propertyDeclaration.addDecorator({ name: 'HideField()' });
-            continue;
-        }
-
         const graphqlType =
             customType?.graphqlType ??
             getGraphqlType({
@@ -131,27 +121,23 @@ export function modelOutputType(outputType: OutputType, args: EventArguments) {
             });
         }
 
-        generateDecorator({
-            propertyDeclaration,
-            graphqlType,
-            isList,
-            isNullable: field.isNullable,
-            defaultValue: modelField?.default,
-            description: modelField?.documentation,
-        });
-
-        // for (const decorator of fieldMeta?.decorators ?? []) {
-        //     if (!importDeclarations.has(decorator.namespace)) {
-        //         importDeclarations.set(decorator.namespace, {
-        //             namespaceImport: decorator.namespace,
-        //             moduleSpecifier: decorator.from,
-        //         });
-        //     }
-        //     propertyDeclaration.insertDecorator(0, {
-        //         name: decorator.name,
-        //         arguments: decorator.arguments,
-        //     });
-        // }
+        if (fieldMeta?.hideOutput) {
+            generateImport({
+                sourceFile,
+                name: 'HideField',
+                moduleSpecifier: '@nestjs/graphql',
+            });
+            propertyDeclaration.addDecorator({ name: 'HideField()' });
+        } else {
+            generateDecorator({
+                propertyDeclaration,
+                graphqlType,
+                isList,
+                isNullable: field.isNullable,
+                defaultValue: modelField?.default,
+                description: modelField?.documentation,
+            });
+        }
     }
 
     sourceFile.addImportDeclarations([...importDeclarations.values()]);
